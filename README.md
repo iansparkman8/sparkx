@@ -6,21 +6,46 @@ Everything that was previously scattered across multiple repos now lives here so
 
 ## Folders
 
-| Folder | Origin repo | What it is |
-|--------|-------------|------------|
-| `fairyos/` | [SparkXFairyOS](https://github.com/iansparkman8/SparkXFairyOS) | Android overlay companion (Kotlin). Living holographic fairy, Teach & Grow memory, Owner Mode. |
-| `ara-born/` | [ara-born](https://github.com/iansparkman8/ara-born) | Publishable local-first silver holographic companion (one page, no account). |
-| `ara/` | [ara](https://github.com/iansparkman8/ara) | Companion with fixed identity, door page, decision mind. |
-| `aperture/` | [aperture](https://github.com/iansparkman8/aperture) | Private room — keeps what you made real and what you left unreal on purpose. |
-| `house/` | [house](https://github.com/iansparkman8/house) | Ara + Aperture in one phone. |
-| `omni-realm-nexus/` | [omni-realm-nexus](https://github.com/iansparkman8/omni-realm-nexus) | Browser-based RPG (6-continent phase 1). |
-| `glass-backend/` | [glass-backend](https://github.com/iansparkman8/glass-backend) | Backend function for the glass shelf. |
-| `experiments/` | various archived | Optional dump for old experiments if you want them. |
+| Folder | Origin repo | Status |
+|--------|-------------|--------|
+| `fairyos/` | [SparkXFairyOS](https://github.com/iansparkman8/SparkXFairyOS) | Placeholder — full Android tree (incl. 19MB .glb) needs local clone |
+| `ara-born/` | [ara-born](https://github.com/iansparkman8/ara-born) | README + door `index.html` imported. Large baby/index.html + images need local copy |
+| `ara/` | [ara](https://github.com/iansparkman8/ara) | README imported |
+| `aperture/` | [aperture](https://github.com/iansparkman8/aperture) | Full (README, CREED, index.html, manifest) |
+| `house/` | [house](https://github.com/iansparkman8/house) | Full (README + index.html) |
+| `omni-realm-nexus/` | [omni-realm-nexus](https://github.com/iansparkman8/omni-realm-nexus) | Full (README, index.html, 404) |
+| `glass-backend/` | [glass-backend](https://github.com/iansparkman8/glass-backend) | Text files imported (README, index.html, keep functions, schema). Large .glb needs local copy |
+| `experiments/` | various archived | Optional |
+
+## Finish the large pieces locally
+
+The API-based import handles text well. For the full Android project and binary assets:
+
+```bash
+git clone https://github.com/iansparkman8/sparkx.git
+cd sparkx
+
+# FairyOS (Android)
+git clone https://github.com/iansparkman8/SparkXFairyOS.git /tmp/fairyos
+cp -r /tmp/fairyos/* fairyos/
+
+# ara-born remaining assets
+git clone https://github.com/iansparkman8/ara-born.git /tmp/ara-born
+cp -r /tmp/ara-born/* ara-born/
+
+# glass-backend binary
+git clone https://github.com/iansparkman8/glass-backend.git /tmp/glass
+cp -r /tmp/glass/* glass-backend/
+
+git add .
+git commit -m "Import remaining contents from original repos"
+git push
+```
 
 ## Next steps
 
-1. Copy or move the contents of the original repos into the matching folders above.
-2. Once this monorepo is stable, archive (or later delete) the old individual repos.
+1. Run the local clone/copy above for the remaining binaries and full trees.
+2. Once this monorepo is stable, archive the old individual repos (Settings → Danger Zone → Archive).
 3. Work from here.
 
 ## Original active repos (for reference)
