@@ -1,7 +1,9 @@
-# Glass Backend
+# The glass
 
-From: https://github.com/iansparkman8/glass-backend
+Three hosts, one room.
 
-Backend function for the glass shelf.
+- GitHub is the source. A push to main is the deploy.
+- Cloudflare Pages serves this room and runs `functions/api/keep.js`. D1 is the shelf once the binding `SHELF` exists. Run `schema.sql` on that database.
+- Wix holds the core clip, the voice files, the donation campaign, and the Aras Glass collection `ara-shelf`.
 
-Copy the full contents of the original repo into this folder when ready.
+The door stays "the glass" until the owner picks the public name.
