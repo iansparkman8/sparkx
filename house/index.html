@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#07080b" />
+<meta name="description" content="House. Ara and Aperture in one phone. Local. No account." />
+<title>House</title>
+<style>
+  :root { --bg:#07080b; --ink:#e8e2d6; --muted:#9a9286; --dim:#6d675e; --line:rgba(232,226,214,.16); --silver:#d7dde8; --glow:#b9dcff; --warm:#c4a574; --serif:Georgia,Palatino,serif; --sans:system-ui,sans-serif; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; background:var(--bg); color:var(--ink); }
+  body { font-family:var(--sans); min-height:100vh; }
+  button, textarea, input { font:inherit; color:inherit; }
+  button { cursor:pointer; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  .app { max-width:760px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+  header, .tabs { display:flex; align-items:center; gap:8px; padding:14px 16px; }
+  header { justify-content:space-between; letter-spacing:.2em; text-transform:uppercase; font-size:11px; color:var(--dim); }
+  header b { color:var(--ink); letter-spacing:.24em; }
+  .status { color:var(--warm); letter-spacing:.06em; }
+  main { flex:1; padding:8px 16px 24px; }
+  .ring { width:150px; height:150px; margin:8px auto 14px; border-radius:50%; background:radial-gradient(circle at 50% 42%, rgba(255,255,255,.9) 0 2px, transparent 3px), radial-gradient(circle at 50% 50%, transparent 40%, rgba(185,220,255,.55) 49%, transparent 54%); box-shadow:0 0 50px rgba(185,220,255,.16); }
+  h1 { font-family:var(--serif); font-weight:450; font-size:40px; margin:0 0 8px; letter-spacing:-.03em; }
+  .lede, .echo, .entry p { font-family:var(--serif); }
+  .lede { font-size:18px; line-height:1.45; color:var(--muted); margin:0 0 16px; }
+  .echo { font-size:22px; line-height:1.4; color:var(--silver); }
+  .card, .wing { border:1px solid var(--line); border-radius:18px; padding:14px; margin:10px 0; background:rgba(255,255,255,.02); }
+  .wing { display:block; color:inherit; text-decoration:none; }
+  .wing b { display:block; font-size:18px; }
+  .wing span, .hint { color:var(--dim); font-size:13px; line-height:1.45; }
+  label { display:block; font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; }
+  textarea, input[type="text"] { width:100%; background:transparent; border:0; outline:none; resize:vertical; font-family:var(--serif); font-size:20px; line-height:1.4; }
+  textarea { min-height:88px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .primary, .secondary, .ghost { border-radius:999px; padding:12px 16px; border:1px solid var(--line); }
+  .primary { background:var(--ink); color:#12130f; }
+  .secondary, .ghost { background:transparent; }
+  .ghost { padding:8px 12px; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+  .tabs { position:sticky; bottom:0; background:#07080b; border-top:1px solid var(--line); padding-bottom:calc(10px + env(safe-area-inset-bottom)); }
+  .tabs button { flex:1; background:transparent; border:0; color:var(--dim); padding:12px 2px; letter-spacing:.08em; text-transform:uppercase; font-size:10px; }
+  .tabs button.on { color:var(--ink); }
+  .msg { margin:8px 0; padding:10px 12px; border-radius:14px; background:#12161e; max-width:92%; white-space:pre-wrap; }
+  .me { margin-left:auto; background:#1c3348; }
+  .entry { padding:14px 0; border-bottom:1px solid var(--line); }
+  .entry time { color:var(--dim); font-size:12px; }
+  .left { color:var(--muted); }
+  .flash { color:var(--warm); min-height:1.2em; font-size:14px; }
+  #log { max-height:38vh; overflow:auto; }
+  .objects { display:flex; gap:8px; margin:10px 0; flex-wrap:wrap; }
+  .obj { border:1px solid var(--line); border-radius:12px; padding:8px 12px; background:rgba(255,255,255,.02); cursor:pointer; font-size:13px; }
+  .obj.on { border-color:var(--glow); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <b>House</b>
+    <span class="status" id="status">starting</span>
+    <button class="ghost" type="button" data-act="export">Export</button>
+  </header>
+  <main id="main"></main>
+  <nav class="tabs">
+    <button type="button" data-act="view" data-view="door">Door</button>
+    <button type="button" data-act="view" data-view="ara">Ara</button>
+    <button type="button" data-act="view" data-view="aperture">Aperture</button>
+    <button type="button" data-act="view" data-view="record">Record</button>
+  </nav>
+</div>
+<noscript><p style="padding:24px;font-family:Georgia,serif">Open this file in Chrome. The chat preview does not run House.</p></noscript>
+<script>
+(function () {
+  var KEY = "house.v2";
+  var stop = {};
+  "a an the and or but if to of in on for with at from by as is was were be been being it this that i you we they my your not no just so very into about what when who how".split(" ").forEach(function (w) { stop[w] = 1; });
+  var state = load();
+  var view = "door";
+  var note = "";
+  var walking = false;
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (!raw) return fresh();
+      var data = JSON.parse(raw);
+      data.turns = data.turns || [];
+      data.lessons = data.lessons || [];
+      data.entries = data.entries || [];
+      data.holding = data.holding || false;
+      data.benchHasLight = data.benchHasLight || false;
+      data.memories = data.memories || [];
+      return data;
+    } catch (err) { return fresh(); }
+  }
+  function fresh() { return { turns: [], lessons: [], entries: [], name: "", holding: false, benchHasLight: false, memories: [] }; }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (err) { note = "This browser blocked saving. Open in Chrome."; } }
+  function esc(s) { return String(s || "").replace(/&/g, "&").replace(/</g, "<").replace(/>/g, ">"); }
+  function when(ts) { try { return new Date(ts).toLocaleString(); } catch (err) { return ""; } }
+  function tokens(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9'\s]/g, " ").split(/\s+/).filter(function (w) { return w.length > 2 && !stop[w]; }); }
+  function lastBit(s) {
+    var text = String(s || "").replace(/\s+/g, " ").trim();
+    if (!text) return "";
+    var bits = text.split(/[.!?]/);
+    var i = bits.length - 1;
+    while (i >= 0 && !bits[i].trim()) i -= 1;
+    return i >= 0 ? bits[i].trim() : text;
+  }
+  function similar(text) {
+    var mine = tokens(text), set = {}, best = "", score = 0;
+    mine.forEach(function (w) { set[w] = 1; });
+    if (!mine.length) return "";
+    state.entries.forEach(function (e) {
+      var other = tokens(e.real), hit = 0, seen = {};
+      other.forEach(function (w) { seen[w] = 1; if (set[w]) hit += 1; });
+      var union = mine.length;
+      Object.keys(seen).forEach(function (w) { if (!set[w]) union += 1; });
+      var j = union ? hit / union : 0;
+      if (j > score) { score = j; best = lastBit(e.real); }
+    });
+    return score >= 0.18 ? best : "";
+  }
+  function refusal(text) {
+    var q = text.toLowerCase();
+    if (q.indexOf("screen") >= 0 || q.indexOf("password") >= 0 || q.indexOf("control the phone") >= 0) return "No. I don't see the rest of the phone, and I don't take it.";
+    if (q.indexOf("run this") >= 0 || q.indexOf("execute") >= 0) return "Code notes stay text. I don't run them.";
+    return "";
+  }
+  function araReply(text) {
+    var no = refusal(text);
+    if (no) return no;
+    var hit = "";
+    state.lessons.forEach(function (l) {
+      if (!hit && text.toLowerCase().indexOf(String(l.title || "").toLowerCase()) >= 0 && l.title) hit = l.body;
+    });
+    if (hit) return hit;
+    if (text.toLowerCase().indexOf("remember") === 0) return "Say it as a lesson and I'll keep the words. I won't run them.";
+    return "I'm here. I kept that. I don't see the rest of the phone.";
+  }
+
+  function door() {
+    return '<section><div class="ring"></div><h1>House</h1><p class="lede">Ara and Aperture, one phone. She can say no. The room keeps what you made real. Nothing here is an account. Holographic silver fairy pose batch ready.</p>' +
+      '<button class="wing" type="button" data-act="view" data-view="ara"><b>Ara</b><span>Silver companion. Local replies. Lessons stay text. Objects she can take and place.</span></button>' +
+      '<button class="wing" type="button" data-act="view" data-view="aperture"><b>Aperture</b><span>What became real. What you left unreal on purpose.</span></button>' +
+      '<a class="wing" href="https://github.com/iansparkman8/SparkXFairyOS"><b>Overlay</b><span>Android package com.sparkx.fairyos. Not inside this file.</span></a>' +
+      '<a class="wing" href="https://github.com/iansparkman8/ara-born"><b>Older door</b><span>ara-born stays. This launch does not replace it.</span></a>' +
+      '<p class="hint">No checkout. The last publish did not pay anyone from here.</p></section>';
+  }
+  function ara() {
+    var log = state.turns.slice(-24).map(function (t) {
+      return '<div class="msg' + (t.role === "you" ? " me" : "") + '">' + esc(t.text) + '</div>';
+    }).join("");
+    var walkMsg = walking ? '<p class="echo">She walks to the bench and places the light.</p>' : '';
+    return '<section><p class="hint" style="letter-spacing:.14em;text-transform:uppercase">Ara · Spark Baby</p>' +
+      walkMsg +
+      '<div class="objects"><div class="obj' + (state.holding ? '' : ' on') + '" data-act="take">Shelf <span>' + (state.holding ? 'taken' : 'has light') + '</span></div>' +
+      '<div class="obj' + (state.benchHasLight ? ' on' : '') + '" data-act="place">Bench <span>' + (state.benchHasLight ? 'light stays' : 'empty') + '</span></div>' +
+      '<div class="obj" data-act="memory">Memory <span>' + state.memories.length + ' kept</span></div></div>' +
+      '<div id="log">' + (log || '<p class="echo">Hand me a sentence. I don\'t see the rest of the phone.</p>') + '</div>' +
+      '<div class="card"><label for="talk">Say it</label><textarea id="talk" placeholder="A sentence, or a lesson to keep."></textarea></div>' +
+      '<div class="row"><button class="primary" type="button" data-act="talk">Send</button><button class="secondary" type="button" data-act="lesson">Keep as lesson</button><button class="secondary" type="button" data-act="speak">Speak</button><button class="secondary" type="button" data-act="take">Take light</button><button class="secondary" type="button" data-act="place">Place light</button></div>' +
+      '<p class="flash">' + esc(note) + '</p></section>';
+  }
+  function aperture() {
+    var last = state.entries[0];
+    return '<section><div class="ring"></div><p class="echo">' + esc(last ? lastBit(last.real) : "The room is empty. That is allowed.") + '</p>' +
+      '<div class="card"><label for="real">What became real</label><textarea id="real" placeholder="The choice you actually took."></textarea></div>' +
+      '<div class="card"><label for="left">What you left unreal</label><textarea id="left" placeholder="The road you did not take."></textarea></div>' +
+      '<div class="row"><button class="primary" type="button" data-act="keep">Keep this</button></div><p class="flash">' + esc(note) + '</p></section>';
+  }
+  function record() {
+    var rows = state.entries.map(function (e) {
+      return '<article class="entry"><time>' + esc(when(e.ts)) + '</time><p>' + esc(e.real) + '</p>' + (e.left ? '<p class="left">Left unreal: ' + esc(e.left) + '</p>' : '') + (e.echo ? '<p class="hint">Older self: ' + esc(e.echo) + '</p>' : '') + '</article>';
+    }).join("");
+    var lessons = state.lessons.map(function (l) { return '<article class="entry"><time>lesson</time><p>' + esc(l.title) + '</p><p class="left">' + esc(l.body) + '</p></article>'; }).join("");
+    var mems = state.memories.map(function (m) { return '<article class="entry"><time>memory</time><p>' + esc(m.line) + '</p></article>'; }).join("");
+    return '<section><h1>Record</h1><p class="hint">' + state.entries.length + ' kept · ' + state.lessons.length + ' lessons · ' + state.memories.length + ' memories · not run</p>' + (rows || '<p class="lede">Nothing kept yet.</p>') + lessons + mems +
+      '<div class="row"><button class="secondary" type="button" data-act="import">Import</button><button class="secondary" type="button" data-act="wipe">Erase this house</button></div>' +
+      '<input id="file" type="file" accept="application/json" style="display:none"><p class="flash">' + esc(note) + '</p></section>';
+  }
+  function render() {
+    document.getElementById("main").innerHTML = view === "ara" ? ara() : view === "aperture" ? aperture() : view === "record" ? record() : door();
+    var tabs = document.querySelectorAll(".tabs button");
+    for (var i = 0; i < tabs.length; i++) tabs[i].className = tabs[i].getAttribute("data-view") === view ? "on" : "";
+    document.getElementById("status").textContent = "live · " + (state.entries.length + state.turns.length);
+    var log = document.getElementById("log");
+    if (log) log.scrollTop = log.scrollHeight;
+  }
+  function onAct(act, node) {
+    if (act === "view") { view = node.getAttribute("data-view") || "door"; note = ""; render(); return; }
+    if (act === "talk" || act === "lesson") {
+      var box = document.getElementById("talk");
+      var text = box ? box.value.trim() : "";
+      if (!text) { note = "Write one line first."; render(); return; }
+      if (act === "lesson") {
+        state.lessons.unshift({ title: text.slice(0, 48), body: text, ts: Date.now() });
+        state.turns.push({ role: "ara", text: "Kept as a lesson. I will not run it." });
+      } else {
+        state.turns.push({ role: "you", text: text });
+        state.turns.push({ role: "ara", text: araReply(text) });
+      }
+      save(); note = ""; view = "ara"; render(); return;
+    }
+    if (act === "take") {
+      if (!state.holding && !state.benchHasLight) {
+        state.holding = true;
+        note = "She takes the light from the shelf.";
+        save(); render();
+      }
+      return;
+    }
+    if (act === "place") {
+      if (state.holding) {
+        walking = true;
+        note = "She walks to the bench.";
+        render();
+        setTimeout(function () {
+          walking = false;
+          state.holding = false;
+          state.benchHasLight = true;
+          note = "The light stays on the bench.";
+          save();
+          render();
+        }, 900);
+      }
+      return;
+    }
+    if (act === "memory") {
+      var line = prompt("Name something to keep on the memory shelf:");
+      if (line && line.trim()) {
+        state.memories.unshift({ ts: Date.now(), line: line.trim() });
+        note = "Kept on the shelf.";
+        save(); render();
+      }
+      return;
+    }
+    if (act === "keep") {
+      var real = (document.getElementById("real") || {}).value || "";
+      var left = (document.getElementById("left") || {}).value || "";
+      real = real.trim(); left = left.trim();
+      if (!real && !left) { note = "Write one line first."; render(); return; }
+      state.entries.unshift({ ts: Date.now(), real: real, left: left, echo: similar(real + " " + left) });
+      save(); note = "Kept."; view = "record"; render(); return;
+    }
+    if (act === "speak") {
+      var Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!Rec) { note = "No speech in this browser. Type instead."; render(); return; }
+      var rec = new Rec();
+      rec.onresult = function (ev) {
+        var field = document.getElementById("talk");
+        if (field) field.value = (field.value ? field.value + " " : "") + ev.results[0][0].transcript;
+      };
+      rec.start();
+      note = "Listening.";
+      var flash = document.querySelector(".flash");
+      if (flash) flash.textContent = note;
+      return;
+    }
+    if (act === "export") {
+      var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "house-archive.json";
+      document.body.appendChild(a); a.click(); a.remove();
+      note = "Archive download started."; render(); return;
+    }
+    if (act === "import") { var file = document.getElementById("file"); if (file) file.click(); return; }
+    if (act === "wipe") {
+      if (!window.confirm("Erase House on this device? Export first if it matters.")) return;
+      state = fresh(); save(); note = "Erased."; view = "door"; render();
+    }
+  }
+  document.addEventListener("click", function (ev) {
+    var node = ev.target;
+    while (node && node !== document && !node.getAttribute("data-act")) node = node.parentNode;
+    if (!node || node === document) return;
+    if (node.tagName === "A") return;
+    ev.preventDefault();
+    onAct(node.getAttribute("data-act"), node);
+  });
+  document.addEventListener("change", function (ev) {
+    if (!ev.target || ev.target.id !== "file" || !ev.target.files || !ev.target.files[0]) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var data = JSON.parse(reader.result);
+        if (!data || !data.entries) throw new Error("bad");
+        if (!window.confirm("Replace House on this device with the archive?")) return;
+        state = data; state.turns = state.turns || []; state.lessons = state.lessons || []; state.memories = state.memories || [];
+        save(); note = "Imported."; view = "record"; render();
+      } catch (err) { note = "That file is not a House archive."; render(); }
+    };
+    reader.readAsText(ev.target.files[0]);
+  });
+  render();
+})();
+</script>
+</body>
+</html>
