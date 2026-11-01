@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Omni-Realm Nexus — Phase 1 Shard Manifest</title>
+<style>
+:root {
+  --bg: #05050f;
+  --panel: #0e0e1c;
+  --accent: #6cf;
+  --accent2: #c8f;
+  --text: #e8e8ff;
+  --muted: #889;
+  --shard: #0ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; font-family: system-ui, Segoe UI, Roboto, sans-serif;
+  background: var(--bg); color: var(--text);
+  background-image: radial-gradient(ellipse at top, #12122a 0%, var(--bg) 70%);
+  min-height: 100vh;
+}
+header {
+  padding: 1rem 1.5rem; border-bottom: 1px solid #223;
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+  flex-wrap: wrap; gap: 0.5rem;
+}
+h1 { margin: 0; font-size: 1.4rem; letter-spacing: 0.05em; }
+h1 span { color: var(--accent); }
+nav { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+nav button, .header-btn {
+  background: transparent; border: 1px solid #345; color: var(--text);
+  padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer;
+}
+nav button:hover, nav button.active, .header-btn:hover { background: #123; border-color: var(--accent); }
+main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+.panel {
+  background: var(--panel); border: 1px solid #223; border-radius: 8px;
+  padding: 1.2rem; margin-bottom: 1rem;
+}
+.continents { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+.continent {
+  border: 1px solid #334; border-radius: 8px; padding: 1rem; cursor: pointer;
+  transition: all 0.2s; position: relative; overflow: hidden;
+}
+.continent:hover { border-color: var(--accent); transform: translateY(-2px); }
+.continent.locked { opacity: 0.55; filter: grayscale(0.6); }
+.continent h3 { margin: 0 0 0.4rem; color: var(--accent2); }
+.shard-tag { font-size: 0.75rem; color: var(--shard); letter-spacing: 0.08em; }
+.stats { display: flex; gap: 1.5rem; flex-wrap: wrap; font-size: 0.95rem; }
+.stats strong { color: var(--accent); }
+#log { min-height: 120px; max-height: 220px; overflow-y: auto; font-size: 0.9rem; line-height: 1.45; }
+#log p { margin: 0.3rem 0; }
+.btn {
+  background: linear-gradient(180deg, #1a2a4a, #0a1a3a); border: 1px solid var(--accent);
+  color: white; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin: 0.25rem;
+}
+.btn:hover { background: #1a3a5a; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.save-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin: 0.8rem 0; }
+#save-feedback { color: var(--shard); font-size: 0.9rem; min-height: 1.2em; }
+footer { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.8rem; }
+input[type=file] { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Omni-<span>Realm</span> Nexus</h1>
+  <nav>
+    <button id="nav-manifest" class="active">Shard Manifest</button>
+    <button id="nav-explore">Explore</button>
+    <button id="nav-status">Status</button>
+  </nav>
+  <div>
+    <button class="header-btn" id="header-save">Save</button>
+    <button class="header-btn" id="header-export">Export</button>
+  </div>
+</header>
+<main>
+  <section id="view-manifest" class="panel">
+    <h2>Phase 1 — 6-Continent Shard Manifest</h2>
+    <p>The Nexus holds six major continents fused from collapsed realities. Collect their Primary Shards to stabilize Phase 1.</p>
+    <div class="continents" id="continent-grid"></div>
+  </section>
+  <section id="view-explore" class="panel" style="display:none">
+    <h2>Active Expedition</h2>
+    <div id="explore-content">Select a continent from the Manifest.</div>
+  </section>
+  <section id="view-status" class="panel" style="display:none">
+    <h2>Nexus Status</h2>
+    <div class="stats" id="status-stats"></div>
+    <div class="save-row">
+      <button class="btn" id="save-btn">Save Progress</button>
+      <button class="btn" id="export-btn">Export Save File</button>
+      <button class="btn" id="import-btn">Import Save</button>
+      <input type="file" id="import-file" accept=".json,application/json">
+      <span id="save-feedback"></span>
+    </div>
+    <div id="log"></div>
+    <button class="btn" id="reset-btn">Reset Progress</button>
+  </section>
+</main>
+<footer>Omni-Realm Nexus · Phase 1 Shard Manifest · Local-first · No account</footer>
+<script>
+const CONTINENTS = [
+  { id: "aetheria", name: "Aetheria", theme: "Sky citadels & floating isles", shard: "Sky-Core", locked: false },
+  { id: "emberdeep", name: "Emberdeep", theme: "Volcanic forges & magma rivers", shard: "Forge-Heart", locked: false },
+  { id: "verdant", name: "Verdant Sprawl", theme: "Living forests & root cities", shard: "Life-Seed", locked: false },
+  { id: "abyssal", name: "Abyssal Reach", theme: "Sunken ruins & pressure cities", shard: "Depth-Pearl", locked: true },
+  { id: "stormwall", name: "Stormwall", theme: "Eternal lightning plains", shard: "Tempest-Core", locked: true },
+  { id: "nullspire", name: "Nullspire", theme: "The central Rift tower", shard: "Nexus-Key", locked: true }
+];
+
+let state = JSON.parse(localStorage.getItem("omni-realm-state") || "null") || {
+  shards: [],
+  energy: 10,
+  level: 1,
+  log: ["Nexus interface online. Phase 1 Shard Manifest loaded."],
+  unlocked: ["aetheria", "emberdeep", "verdant"]
+};
+
+function save() {
+  localStorage.setItem("omni-realm-state", JSON.stringify(state));
+}
+function manualSave() {
+  save();
+  const fb = document.getElementById("save-feedback");
+  if (fb) {
+    fb.textContent = "Progress saved.";
+    setTimeout(() => { fb.textContent = ""; }, 2000);
+  }
+  log("Manual save complete.");
+}
+function exportSave() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "omni-realm-nexus-save.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+  log("Save file exported.");
+}
+function importSave(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (data && Array.isArray(data.shards) && Array.isArray(data.unlocked)) {
+        state = data;
+        save();
+        log("Save file imported.");
+        render();
+      } else {
+        alert("Invalid save file.");
+      }
+    } catch (e) {
+      alert("Could not read save file.");
+    }
+  };
+  reader.readAsText(file);
+}
+function log(msg) {
+  state.log.unshift(msg);
+  if (state.log.length > 40) state.log.pop();
+  save();
+  render();
+}
+
+function renderContinents() {
+  const grid = document.getElementById("continent-grid");
+  grid.innerHTML = CONTINENTS.map(c => {
+    const has = state.shards.includes(c.shard);
+    const locked = !state.unlocked.includes(c.id);
+    return `<div class="continent ${locked ? "locked" : ""}" data-id="${c.id}">
+      <div class="shard-tag">${has ? "SHARD SECURED" : locked ? "LOCKED" : "PRIMARY SHARD AVAILABLE"}</div>
+      <h3>${c.name}</h3>
+      <p>${c.theme}</p>
+      <small>${has ? "✓ " + c.shard : c.shard}</small>
+    </div>`;
+  }).join("");
+  grid.querySelectorAll(".continent").forEach(el => {
+    el.onclick = () => selectContinent(el.dataset.id);
+  });
+}
+
+function selectContinent(id) {
+  const c = CONTINENTS.find(x => x.id === id);
+  if (!c || !state.unlocked.includes(id)) {
+    log("Continent still phase-locked.");
+    return;
+  }
+  document.getElementById("nav-explore").click();
+  const has = state.shards.includes(c.shard);
+  document.getElementById("explore-content").innerHTML = `
+    <h3>${c.name}</h3>
+    <p>${c.theme}</p>
+    <p>Primary Shard: <strong>${c.shard}</strong></p>
+    ${has ? "<p>Shard already secured. Nexus stability increased.</p>" : `
+      <p>Expedition cost: 1 Energy</p>
+      <button class="btn" id="claim-btn">Secure Primary Shard</button>
+    `}
+  `;
+  const btn = document.getElementById("claim-btn");
+  if (btn) btn.onclick = () => claimShard(c);
+}
+
+function claimShard(c) {
+  if (state.energy < 1) { log("Insufficient Energy."); return; }
+  if (state.shards.includes(c.shard)) return;
+  state.energy -= 1;
+  state.shards.push(c.shard);
+  state.level = Math.floor(state.shards.length / 2) + 1;
+  log(`Secured ${c.shard} from ${c.name}.`);
+  if (state.shards.length >= 2 && !state.unlocked.includes("abyssal")) {
+    state.unlocked.push("abyssal");
+    log("Abyssal Reach phase-lock released.");
+  }
+  if (state.shards.length >= 4 && !state.unlocked.includes("stormwall")) {
+    state.unlocked.push("stormwall");
+    log("Stormwall phase-lock released.");
+  }
+  if (state.shards.length >= 5 && !state.unlocked.includes("nullspire")) {
+    state.unlocked.push("nullspire");
+    log("Nullspire central access granted.");
+  }
+  save();
+  render();
+  selectContinent(c.id);
+}
+
+function renderStatus() {
+  document.getElementById("status-stats").innerHTML = `
+    <div>Level: <strong>${state.level}</strong></div>
+    <div>Energy: <strong>${state.energy}</strong></div>
+    <div>Shards: <strong>${state.shards.length} / 6</strong></div>
+    <div>Unlocked Continents: <strong>${state.unlocked.length}</strong></div>
+  `;
+  document.getElementById("log").innerHTML = state.log.map(m => `<p>${m}</p>`).join("");
+}
+
+function render() {
+  renderContinents();
+  renderStatus();
+}
+
+function switchView(id) {
+  ["manifest", "explore", "status"].forEach(v => {
+    document.getElementById("view-" + v).style.display = v === id ? "block" : "none";
+    document.getElementById("nav-" + v).classList.toggle("active", v === id);
+  });
+}
+
+document.getElementById("nav-manifest").onclick = () => switchView("manifest");
+document.getElementById("nav-explore").onclick = () => switchView("explore");
+document.getElementById("nav-status").onclick = () => switchView("status");
+
+document.getElementById("header-save").onclick = manualSave;
+document.getElementById("header-export").onclick = exportSave;
+document.getElementById("save-btn").onclick = manualSave;
+document.getElementById("export-btn").onclick = exportSave;
+document.getElementById("import-btn").onclick = () => document.getElementById("import-file").click();
+document.getElementById("import-file").onchange = (e) => {
+  if (e.target.files[0]) importSave(e.target.files[0]);
+  e.target.value = "";
+};
+
+document.getElementById("reset-btn").onclick = () => {
+  if (confirm("Reset all Phase 1 progress?")) {
+    localStorage.removeItem("omni-realm-state");
+    location.reload();
+  }
+};
+
+setInterval(() => {
+  if (state.energy < 20) {
+    state.energy += 1;
+    save();
+    if (document.getElementById("view-status").style.display !== "none") renderStatus();
+  }
+}, 30000);
+
+render();
+</script>
+</body>
+</html>
