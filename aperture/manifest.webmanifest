@@ -1,0 +1,9 @@
+{
+  "name": "Aperture",
+  "short_name": "Aperture",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#07080b",
+  "theme_color": "#07080b",
+  "description": "A private room that keeps what you made real, and what you left unreal on purpose."
+}
