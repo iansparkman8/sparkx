@@ -3,8 +3,6 @@ name: Build SparkX Master APK
 on:
   push:
     branches: [ main ]
-    paths:
-      - 'fairyos/**'
   workflow_dispatch:
 
 defaults:
