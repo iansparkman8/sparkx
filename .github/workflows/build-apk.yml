@@ -1,0 +1,56 @@
+name: Build SparkX Master APK
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'fairyos/**'
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: fairyos
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+      with:
+        gradle-version: 8.9
+
+    - name: Build debug APK
+      run: ./gradlew assembleDebug --stacktrace
+
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: SparkX-Master-debug-apk
+        path: fairyos/app/build/outputs/apk/debug/app-debug.apk
+        retention-days: 30
+
+    - name: Create Release with APK
+      if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: v7.0.0-living
+        name: SparkX Master v7 — Living Fairy
+        body: |
+          Download and install the APK.
+          Package: com.sparkx.fairyos
+          Safe Companion by default. Owner features require an explicit local unlock.
+        files: fairyos/app/build/outputs/apk/debug/app-debug.apk
+        fail_on_unmatched_files: false
